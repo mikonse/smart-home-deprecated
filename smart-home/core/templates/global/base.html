@@ -1,0 +1,30 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title>{% block title %}Generic Title{% endblock %}</title>
+
+    {% block stylesheets %}
+        {% load static %}
+        <link rel="stylesheet" type="text/css" href="{% static "global/font-awesome-4.7.0/css/font-awesome.min.css" %}">
+        <link rel="stylesheet" type="text/css" href="{% static "global/bootstrap-4.0.0-alpha.6-dist/css/bootstrap.min.css" %}">
+        <link rel="stylesheet" type="text/css" href="{% static "global/css/global-styles.css" %}">
+    {% endblock %}
+
+</head>
+<body>
+    {% block body %}
+    <h2>{% block header %}{% endblock %}</h2>
+    <hr/>
+    {% block content %}{% endblock %}
+    {% endblock %}
+
+    {% block script_imports %}
+        {% load static %}
+    {% endblock %}
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

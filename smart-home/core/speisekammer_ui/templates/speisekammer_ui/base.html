@@ -1,0 +1,35 @@
+{% extends 'global/base.html' %}
+
+{% block title %}Speisekammer{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row"><h2>{% block header %}<b><i class="fa fa-shopping-cart"></i> Speisekammer</b>{% endblock %}</h2></div>
+    <hr/>
+    <div class="row">
+        <div class="col-3 col-sm-3 col-md-3 col-lg-2 col-xl-2">
+            <nav class="navbar navbar-toggleable-sm navbar-light bg-faded">
+                <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarWEX" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-nav navbar-collapse collapse flex-column mt-md-0 mt-4 pt-md-0 pt-4" id="navbarWEX">
+                    <a class="nav-link navbar-brand active" href="{% url "speisekammer_ui:index" %}"><span class="fa fa-home"></span></a>
+                    <a href="{% url "speisekammer_ui:product-list" %}" class="nav-link">Products</a>
+                    <a href="{% url "speisekammer_ui:shopping-lists" %}" class="nav-link">Shopping Lists</a>
+                    <a href="" class="nav-link">Link</a>
+                </div>
+            </nav>
+        </div>
+        <div class="col-9 col-sm-9 col-md-9 col-lg-10 col-xl-10">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script_imports %}
+    {{ block.super }}
+    {% load static %}
+    <script type="text/javascript" src="{% static "global/js/jquery.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "speisekammer_ui/js/speisekammer.js" %}"></script>
+{% endblock %}

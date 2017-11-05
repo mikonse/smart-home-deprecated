@@ -94,6 +94,22 @@ class ProductViewSet(viewsets.ModelViewSet):
                 status.HTTP_400_BAD_REQUEST
             )
 
+    @detail_route(methods=['post'], url_path='to-active-list')
+    def to_active_list(self, request, pk=None):
+        instance = self.get_object()
+
+        if 'amount' in request.POST:
+            instance.to_active_list(request.POST.get('amount'))
+            return Response(
+                self.serializer_class(instance, context={'request': request}).data,
+                status.HTTP_201_CREATED
+            )
+        else:
+            return Response(
+                {'error': 'Invalid erquest.'},
+                status.HTTP_400_BAD_REQUEST
+            )
+
 
 class BarcodeViewSet(viewsets.ModelViewSet):
     """

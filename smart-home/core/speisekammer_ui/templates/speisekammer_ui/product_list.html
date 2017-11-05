@@ -1,0 +1,66 @@
+{% extends "speisekammer_ui/base.html" %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                <h5>Products</h5>
+            </div>
+            <div class="col-md-5">
+                <div class="form-group">
+                    <input id="filter-input" type="text" class="form-control" name="filter" onkeyup="filterTable()" placeholder="Filter">
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <table id="product-table" class="table table-sm">
+                <thead class="thead-inverse">
+                    <tr>
+                        <th>Product</th>
+                        <th>Current Stock</th>
+                        <th>Desired Stock</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for p in products %}
+                    <tr>
+                        <td><a href="{% url 'speisekammer_ui:product-detail' pk=p.pk %}">{{ p.name }}</a></td>
+                        <td>{{ p.item_count }}</td>
+                        <td>{{ p.stock_count }}</td>
+                        <td class="form-inline">
+                            <button class="btn btn-success mx-2" onclick="productIO({{ p.pk }}, 1);"><i class="fa fa-fw fa-plus"></i></button>
+                            <button class="btn btn-danger mx-2" onclick="productIO({{ p.pk }}, -1);"><i class="fa fa-fw fa-minus"></i></button>
+                            <div class="form-group">
+                                <input class="ml-5 form-control" type="text" id="io-input-{{ p.pk }}">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-info"
+                                            onclick="dynamicProductIO({{ p.pk }});">
+                                        <i class="fa fa-fw fa-refresh"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function filterTable() {
+        const filter = $("#filter-input").val();
+        const tr = $("#product-table").find("tbody").find("tr");
+
+        if (filter != null && filter != "") {
+            tr.hide();
+            tr.filter(":contains('" + filter + "')").show();
+        } else {
+            tr.show();
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "speisekammer_ui/base.html" %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h4>{{ product.name }}</h4>
+            </div>
+        </div>
+        <hr/>
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Current Stock
+                        <button class="btn btn-success" onclick="productIO({{ product.pk }}, 1)"><i class="fa fa-fw fa-plus"></i></button>
+                        <button class="btn btn-danger" onclick="productIO({{ product.pk }}, -1)"><i class="fa fa-fw fa-minus"></i></button>
+                        <span class="badge badge-primary badge-pill">{{ product.item_count }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Desired Stock
+                        <button class="btn btn-success" onclick="productStockIO({{ product.pk }}, 1)"><i class="fa fa-fw fa-plus"></i></button>
+                        <button class="btn btn-danger" onclick="productStockIO({{ product.pk }}, -1)"><i class="fa fa-fw fa-minus"></i></button>
+                        <span class="badge badge-info badge-pill">{{ product.stock_count }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Add to active shopping list
+                        <div class="form-inline">
+                            <div class="input-group">
+                                <input class="form-control" type="text" id="list-input-{{ product.pk }}">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-info"
+                                            onclick="productToShoppingList({{ product.pk }});">
+                                        <i class="fa fa-fw fa-plus"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <table class="table">
+                    <thead class="thead-inverse">
+                        <tr>
+                            <th>Barcodes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for barcode in product.barcodes.all %}
+                            <tr>
+                                <td>{{ barcode.barcode }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+       {% comment %} <div class="row">
+            <table class="table">
+                <thead class="thead-inverse">
+                    <tr>
+                        <th>Barcode</th>
+                        <th>Vorrat</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for i in instances %}
+                    <tr>
+                        <td>
+                            <a href="{{ i.get_absolute_url }}">{{ i.barcode }}</a>
+                        </td>
+                        <td>{{ i.item_count }}</td>
+                        <td>
+                            <button class="btn btn-success"
+                                    onclick="plus_one({{ i.barcode }})"><i class="fa fa-plus"></i></button>
+                            <button class="btn btn-danger" onclick="minus_one({{ i.barcode }})">
+                                <i class="fa fa-minus"></i></button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>{% endcomment %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // using jQuery
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = $.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    function plus_one(barcode) {
+        $.ajax({
+            type: 'PUT',
+            url: '/speisekammer_server/instances/' + barcode + '/item_count',
+            success: function () {
+                location.reload()
+            }
+        });
+    }
+
+    function minus_one(barcode) {
+        $.ajax({
+            type: 'DELETE',
+            url: '/speisekammer_server/instances/' + barcode + '/item_count',
+            success: function () {
+                location.reload()
+            }
+        });
+    }
+</script>
+{% endblock %}

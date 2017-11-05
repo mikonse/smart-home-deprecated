@@ -1,0 +1,29 @@
+{% extends 'speisekammer_ui/base.html' %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+
+        </div>
+        <div class="row">
+            <table id="shopping-list-table" class="table table-sm">
+                <thead class="thead-inverse">
+                    <tr>
+                        <th>Name</th>
+                        <th>Creation</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for list in lists %}
+                    <tr>
+                        <td><a href="{% url 'speisekammer_ui:shopping-list-detail' pk=list.pk %}">{{ list.name }}</a></td>
+                        <td>{{ list.creation }}</td>
+                        <td>{% if list.is_completed %}<i class="fa fa-fw fa-check text-success"></i>{% else %}<i class="fa fa-fw fa-times-circle text-danger"></i>{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

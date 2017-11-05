@@ -40,8 +40,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'api.apps.ApiConfig',
     'speisekammer.apps.SpeisekammerConfig',
-    'devices.apps.DevicesConfig'
-
+    'devices.apps.DevicesConfig',
+    'speisekammer_ui.apps.SpeisekammerUiConfig'
 ]
 
 INSTALLED_API_APPS = [
@@ -64,7 +64,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

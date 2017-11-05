@@ -1,8 +1,5 @@
 from django.utils import timezone
 from django.db import models
-
-# Create your models here.
-from django.db.models import Sum
 from django.urls import reverse
 
 
@@ -17,6 +14,10 @@ class Product(models.Model):
     def assign_barcode(self, barcode):
         barcode = Barcode(product=self, barcode=barcode)
         barcode.save()
+
+    def to_active_list(self, amount):
+        active_list = ShoppingList.get_active_list()
+        active_list.add_item(self, amount)
 
     @staticmethod
     def item_io_by_barcode(io, barcode):
@@ -76,10 +77,35 @@ class ShoppingList(models.Model):
     name = models.CharField(max_length=100, blank=True)
     creation = models.DateTimeField()
     completion = models.DateTimeField(blank=True, null=True)
+    active = models.BooleanField(default=False)
+
+    @staticmethod
+    def get_active_list():
+        if not ShoppingList.objects.filter(active=True).exists():
+            if not ShoppingList.objects.all().count() > 0:
+                shopping_list = ShoppingList.create_from_speisekammer(name='')
+            else:
+                shopping_list = ShoppingList.objects.all().order_by('creation')[0]
+            shopping_list.active = True
+            shopping_list.save()
+        else:
+            shopping_list = ShoppingList.objects.filter(active=True).order_by('creation')[0]
+        return shopping_list
 
     def add_item(self, product, item_count=0):
-        item = ShoppingListItem(shopping_list=self, product=product, item_count=item_count)
+        if type(item_count) == str:
+            try:
+                item_count = int(item_count)
+            except ValueError:
+                return False
+
+        if ShoppingListItem.objects.filter(shopping_list=self, product=product).exists():
+            item = ShoppingListItem.objects.filter(shopping_list=self, product=product)[0]
+            item.item_count += item_count
+        else:
+            item = ShoppingListItem(shopping_list=self, product=product, item_count=item_count)
         item.save()
+        return True
 
     def update_from_speisekammer(self):
         for item in self.items:
@@ -92,6 +118,7 @@ class ShoppingList(models.Model):
     def complete(self):
         if not self.is_completed():
             self.completion = timezone.now()
+            self.active = False
             self.save()
 
     def is_completed(self):
@@ -119,6 +146,9 @@ class ShoppingListItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     item_count = models.PositiveIntegerField(default=0)
     shopping_list = models.ForeignKey(ShoppingList, related_name="items")
+
+    class Meta:
+        unique_together = ('product', 'shopping_list')
 
     def update_from_speisekammer(self):
         self.item_count = self.product.count_difference()

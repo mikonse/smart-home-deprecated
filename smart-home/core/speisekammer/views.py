@@ -1,125 +1,156 @@
-from django.shortcuts import get_object_or_404
-from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
+from rest_framework import permissions
+from rest_framework import viewsets
+from rest_framework import status
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
-from .models import Product, ProductInstance, ShoppingList
-from .serializers import ProductSerializer, InstanceSerializer, ItemCountSerializer, ShoppingListSerializer
+from .models import Product, ShoppingList, Barcode, ShoppingListItem
+from .serializers import ProductSerializer, ShoppingListSerializer, BarcodeSerializer, ShoppingListItemSerializer
 
 
-class ProductList(GenericAPIView, ListModelMixin, CreateModelMixin):
+class ProductViewSet(viewsets.ModelViewSet):
+    """
+    Viewset for API interaction with the Product model
+    """
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-    def get_queryset(self):
-        if 'filter' in self.request.query_params:
-            return Product.objects.filter(name__contains=self.request.query_params['filter'])
+    @list_route(methods=['post'], url_path='item-io-by-barcode')
+    def item_io_by_barcode(self, request):
+        if 'item_io' in request.POST and 'barcode' in request.POST:
+            success = Product.item_io_by_barcode(request.POST.get('item_io'), request.POST.get('barcode'))
+            if success:
+                return Response(
+                    self.serializer_class(Barcode.objects.get(request.POST.get('barcode')).product).data,
+                    status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {'error': 'Barcode does not exist in the database or invalid data format.'},
+                    status.HTTP_400_BAD_REQUEST
+                )
         else:
-            return Product.objects.all()
+            return Response(
+                {'error': 'Invalid request. item_io and barcode keywords must be present in POST data.'},
+                status.HTTP_400_BAD_REQUEST
+            )
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+    @detail_route(methods=['post'], url_path='stock-io')
+    def stock_io(self, request, pk=None):
+        """
+        API call to modify the desired stock count of a product.
+        POST parameters:
+        :stock_count int : io to be performed
+        """
+        instance = self.get_object()
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
-
-
-class ProductDetail(GenericAPIView, RetrieveModelMixin, DestroyModelMixin):
-    serializer_class = ProductSerializer
-    lookup_field = 'pk'
-    lookup_url_kwarg = 'pk'
-
-    def get_object(self):
-        return get_object_or_404(Product, pk=self.kwargs['pk'])
-
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
-
-    def put(self, request, *args, **kwargs):
-        if 'stock_io' in request.data:
-            self.get_object().stock_io(request.data['stock_io'])
-            return Response(self.get_object())
+        if 'stock_io' in request.POST:
+            success = instance.stock_io(request.POST.get('stock_io'))
+            return Response(
+                self.serializer_class(instance, context={'request': request}).data,
+                status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST
+            )
         else:
-            return Response({
-                'error': 'Please specify a stock_io parameter to modify the stock count'
-            })
+            return Response(
+                {'error': 'Invalid request. item_io keyword must be present in POST data.'},
+                status.HTTP_400_BAD_REQUEST
+            )
 
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
-
-
-class ProductInstanceList(GenericAPIView, ListModelMixin, CreateModelMixin):
-    serializer_class = InstanceSerializer
-
-    def get_queryset(self):
-        return ProductInstance.objects.all()
-
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
-
-
-class ProductInstanceDetail(GenericAPIView, RetrieveModelMixin, DestroyModelMixin):
-    serializer_class = InstanceSerializer
-    lookup_field = 'pk'
-    lookup_url_kwarg = 'pk'
-
-    def get_object(self):
-        return get_object_or_404(ProductInstance, pk=self.kwargs['pk'])
-
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
-
-
-class ProductItemCount(GenericAPIView):
-    serializer_class = ItemCountSerializer
-
-    def get_object(self):
-        return get_object_or_404(ProductInstance, pk=self.kwargs['pk'])
-
-    def get(self, request, *args, **kwargs):
+    @detail_route(methods=['post'], url_path='item-io')
+    def item_io(self, request, pk=None):
+        """
+        API call to modify the current item count of a product.
+        POST parameters:
+        :item_count int : io to be performed
+        """
         instance = self.get_object()
-        serializer = self.serializer_class(instance)
-        return Response(serializer.data)
 
-    def put(self, request, *args, **kwargs):
+        if 'item_io' in request.POST:
+            success = instance.item_io(request.POST.get('item_io'))
+            return Response(
+                self.serializer_class(instance, context={'request': request}).data,
+                status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            return Response(
+                {'error': 'Invalid request. item_io keyword must be present in POST data.'},
+                status.HTTP_400_BAD_REQUEST
+            )
+
+    @detail_route(methods=['post'], url_path='assign-barcode')
+    def assign_barcode(self, request, pk=None):
         instance = self.get_object()
-        instance.stock_io(1)
-        serializer = self.serializer_class(instance)
-        return Response(serializer.data)
 
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.stock_io(-1)
-        serializer = self.serializer_class(instance)
-        return Response(serializer.data)
+        if 'barcode' in request.POST:
+            success = instance.assign_barcode(request.POST.get('barcode'))
+            return Response(
+                self.serializer_class(instance, context={'request': request}).data,
+                status.HTTP_201_CREATED if success else status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            return Response(
+                {'error': 'Invalid request. barcode keyword must be present in POST data.'},
+                status.HTTP_400_BAD_REQUEST
+            )
 
 
-class ShoppingLists(GenericAPIView, ListModelMixin, CreateModelMixin):
+class BarcodeViewSet(viewsets.ModelViewSet):
+    """
+    Viewset for API interaction with the Barcode model
+    """
+    queryset = Barcode.objects.all()
+    serializer_class = BarcodeSerializer
+    # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+
+class ShoppingListViewSet(viewsets.ModelViewSet):
+    """
+    Viewset for API interaction with the ShoppingList model
+    """
+    queryset = ShoppingList.objects.all()
     serializer_class = ShoppingListSerializer
+    # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-    def get_queryset(self):
-        return ShoppingList.objects.all()
+    @list_route(methods=['post'], url_path='create-from-speisekammer')
+    def create_from_speisekammer(self, request):
+        """
+        API call to automatically generate a shopping list from the current stock.
+        """
+        name = request.POST.get('name', '')
+        instance = ShoppingList.create_from_speisekammer(name=name)
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+        return Response(
+            self.serializer_class(instance, context={'request': request}).data,
+            status.HTTP_201_CREATED
+        )
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
 
+class ShoppingListItemViewSet(viewsets.ModelViewSet):
+    """
+    Viewset for API interaction with the ShoppingListItem model.
+    """
+    queryset = ShoppingListItem.objects.all()
+    serializer_class = ShoppingListItemSerializer
+    # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-class ShoppingListDetail(GenericAPIView, RetrieveModelMixin, DestroyModelMixin):
-    serializer_class = ShoppingListSerializer
+    @detail_route(methods=['post'], url_path='item-io')
+    def item_io(self, request, pk=None):
+        """
+        API call to modify the current item count of a product.
+        POST parameters:
+        :item_count int : io to be performed
+        """
+        instance = self.get_object()
 
-    def get_object(self):
-        return get_object_or_404(ShoppingList, pk=self.kwargs['pk'])
-
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        if 'item_io' in request.POST:
+            success = instance.item_io(request.POST.get('item_io'))
+            return Response(
+                self.serializer_class(instance, context={'request': request}).data,
+                status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            return Response(
+                {'error': 'Invalid request. item_io keyword must be present in POST data.'},
+                status.HTTP_400_BAD_REQUEST
+            )

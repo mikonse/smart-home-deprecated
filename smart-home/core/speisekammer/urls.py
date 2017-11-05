@@ -1,18 +1,14 @@
-from django.conf.urls import url
+from rest_framework import routers
 
 from . import views
 
 app_name = 'speisekammer'
 url_regex = r'^speisekammer/'
 
-urlpatterns = [
-    url(r'^products/$', views.ProductList.as_view(), name='product_list'),
-    url(r'^products/(?P<pk>[0-9]+)/$', views.ProductDetail.as_view(), name='product_detail'),
+# Create a router and register viewsets
+router = routers.DefaultRouter()
+router.register(r'products', views.ProductViewSet)
+router.register(r'barcodes', views.BarcodeViewSet)
+router.register(r'shopping-lists', views.ShoppingListViewSet)
 
-    url(r'^instances/$', views.ProductInstanceList.as_view(), name='product_instance_list'),
-    url(r'^instances/(?P<pk>[0-9]+)/$', views.ProductInstanceDetail.as_view(), name='product_instance_detail'),
-    url(r'^instances/(?P<pk>[0-9]+)/item_count$', views.ProductItemCount.as_view()),
-
-    url(r'^shopping-lists/$', views.ShoppingLists.as_view(), name='shopping_lists'),
-    url(r'^shopping-lists/(?P<pk>[0-9]+)/$', views.ShoppingListDetail.as_view(), name='shopping_list_detail')
-]
+urlpatterns = router.urls

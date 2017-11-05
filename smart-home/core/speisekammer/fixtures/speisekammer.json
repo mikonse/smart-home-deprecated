@@ -1,0 +1,20 @@
+[
+{
+    "model": "speisekammer.product",
+    "pk": 1,
+    "fields": {
+        "name": "Karotten",
+        "stock_count": 10,
+        "item_count": 5
+    }
+},
+{
+    "model": "speisekammer.product",
+    "pk": 2,
+    "fields": {
+        "name": "Gurken",
+        "stock_count": 20,
+        "item_count": 0
+    }
+}
+]

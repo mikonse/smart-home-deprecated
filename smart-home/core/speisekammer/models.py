@@ -9,45 +9,64 @@ from django.urls import reverse
 class Product(models.Model):
     name = models.CharField(max_length=255, unique=True)
     stock_count = models.PositiveIntegerField(default=0)
+    item_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ['name']
 
-    def stock_io(self, io, barcode=None):
-        if barcode is None:
-            ProductInstance.objects.get_or_create(product=self, barcode__exact='')[0].stock_io(io)
-        else:
-            ProductInstance.objects.get_or_create(product=self, barcode=barcode)[0].stock_io(io)
+    def assign_barcode(self, barcode):
+        barcode = Barcode(product=self, barcode=barcode)
+        barcode.save()
 
-    def item_count(self):
-        return self.instances.aggregate(item_count=Sum('item_count'))['item_count']
+    @staticmethod
+    def item_io_by_barcode(io, barcode):
+        if not Barcode.objects.filter(barcode=barcode).exists():
+            return False
+        product = Barcode.objects.get(barcode=barcode).product
+        return product.item_io(io)
+
+    def stock_io(self, io):
+        if type(io) == str:
+            try:
+                io = int(io)
+            except ValueError:
+                return False
+
+        self.stock_count += io
+        if self.stock_count < 0:
+            self.stock_count = 0
+        self.save()
+        return True
+
+    def item_io(self, io):
+        if type(io) == str:
+            try:
+                io = int(io)
+            except ValueError:
+                return False
+
+        self.item_count += io
+        if self.item_count < 0:
+            self.item_count = 0
+        self.save()
+        return True
 
     def count_difference(self):
-        return self.stock_count - self.item_count() if self.stock_count > self.item_count() else 0
+        return self.stock_count - self.item_count if self.stock_count > self.item_count else 0
 
     def get_absolute_url(self):
-        return reverse('speisekammer:product_detail', kwargs={'pk': self.pk})
+        return reverse('api:speisekammer:product-detail', kwargs={'pk': self.pk})
 
     def __str__(self):
         return self.name
 
 
-class ProductInstance(models.Model):
-    product = models.ForeignKey(Product, related_name='instances', on_delete=models.CASCADE)
-    barcode = models.CharField(max_length=100, blank=True)
-    item_count = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        unique_together = ('product', 'barcode')
-
-    def stock_io(self, io):
-        self.item_count += io
-        if self.item_count < 0:
-            self.item_count = 0
-        self.save()
+class Barcode(models.Model):
+    product = models.ForeignKey(Product, related_name='barcodes', on_delete=models.CASCADE)
+    barcode = models.CharField(max_length=100)
 
     def get_absolute_url(self):
-        return reverse('speisekammer:instance_detail', kwargs={'pk': self.product.pk, 'barcode': self.barcode})
+        return reverse('api:speisekammer:barcode-detail', kwargs={'pk': self.pk})
 
     def __str__(self):
         return self.barcode
@@ -58,6 +77,18 @@ class ShoppingList(models.Model):
     creation = models.DateTimeField()
     completion = models.DateTimeField(blank=True, null=True)
 
+    def add_item(self, product, item_count=0):
+        item = ShoppingListItem(shopping_list=self, product=product, item_count=item_count)
+        item.save()
+
+    def update_from_speisekammer(self):
+        for item in self.items:
+            item.update_from_speisekammer()
+        if not ShoppingListItem.objects.filter(shopping_list=self, item_count__gt=0).exists():
+            self.complete()
+            return True
+        return False
+
     def complete(self):
         if not self.is_completed():
             self.completion = timezone.now()
@@ -67,7 +98,7 @@ class ShoppingList(models.Model):
         return self.completion is not None
 
     def get_absolute_url(self):
-        return reverse('speisekammer:shopping_list_detail', kwargs={'pk': self.pk})
+        return reverse('api:speisekammer:shoppinglist-detail', kwargs={'pk': self.pk})
 
     @staticmethod
     def create_from_speisekammer(name):
@@ -76,6 +107,7 @@ class ShoppingList(models.Model):
 
         for product in Product.objects.all():
             ShoppingListItem.create_from_product(instance, product)
+        return instance
 
     def __str__(self):
         return '{0} created on {1}, completed on {2}'.format(
@@ -85,13 +117,38 @@ class ShoppingList(models.Model):
 
 class ShoppingListItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    item_count = models.PositiveIntegerField()
+    item_count = models.PositiveIntegerField(default=0)
     shopping_list = models.ForeignKey(ShoppingList, related_name="items")
+
+    def update_from_speisekammer(self):
+        self.item_count = self.product.count_difference()
+        self.save()
+
+    def item_io(self, io):
+        if type(io) == str:
+            try:
+                io = int(io)
+            except ValueError:
+                return False
+
+        self.item_count += io
+        if self.item_count < 0:
+            self.item_count = 0
+        self.save()
+        return True
 
     @staticmethod
     def create_from_product(shopping_list, product):
-        instance = ShoppingListItem(product=product, item_count=product.count_difference(), shopping_list=shopping_list)
-        instance.save()
+        if product.count_difference() > 0:
+            instance = ShoppingListItem(
+                product=product,
+                item_count=product.count_difference(),
+                shopping_list=shopping_list
+            )
+            instance.save()
+            return True
+        else:
+            return False
 
     def __str__(self):
         return '{0} x {1} from list {2}'.format(

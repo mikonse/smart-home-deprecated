@@ -79,6 +79,12 @@ class ShoppingList(models.Model):
     completion = models.DateTimeField(blank=True, null=True)
     active = models.BooleanField(default=False)
 
+    def get_name(self):
+        if self.name is None or self.name == '':
+            return "Unnamed list %d" % self.pk
+        else:
+            return self.name
+
     @staticmethod
     def get_active_list():
         if not ShoppingList.objects.filter(active=True).exists():

@@ -1,5 +1,48 @@
 {% extends 'speisekammer_ui/base.html' %}
 
 {% block content %}
-
+<div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h4>{{ shopping_list.name }}</h4>
+            </div>
+        </div>
+        <hr/>
+        <div class="row">
+            <div class="col-md-8">
+                <table class="table">
+                    <thead class="thead-inverse">
+                        <tr>
+                            <th>Product</th>
+                            <th>Count</th>
+                            <th>Status</th>
+                            <th>Complete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in shopping_list.items.all %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.item_count }}</td>
+                                <td>{% if item.done %}<i id="item-check-{{ item.pk }}" class="fa fa-fw fa-check text-success"></i>{% else %}<i id="item-check-{{ item.pk }}" class="fa fa-fw fa-times-circle text-danger"></i>{% endif %}</td>
+                                <td><button class="btn btn-sm btn-success" onclick="completeShoppingListItem({{ item.pk }}, '#item-check-{{ item.pk }}')"><i class="fa fa-fw fa-check"></i></button></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-3">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Set done
+                        <button class="btn btn-success" onclick="completeShoppingList({{ shopping_list.pk }})"><i class="fa fa-fw fa-check"></i></button>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Delete
+                        <button class="btn btn-danger" onclick="deleteShoppingList({{ shopping_list.pk }})"><i class="fa fa-fw fa-trash"></i></button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
 {% endblock %}

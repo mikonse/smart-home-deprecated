@@ -31,8 +31,6 @@ class ApiConfig(AppConfig):
         except ImportError:
             raise RuntimeError("API module %s could not be imported" % module_name)
 
-        # Try and import the url conf of the module
-
         # Get the routing regex for the app, defaults to the app name
         try:
             base_url = module_urls.url_regex

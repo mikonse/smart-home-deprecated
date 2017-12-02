@@ -1,6 +1,7 @@
 {% extends "speisekammer_ui/base.html" %}
 
 {% block content %}
+    {% include "speisekammer_ui/modal_form.html" with modal_id='product-create-modal' modal_label='product-create' modal_title='Create Product' form=form %}
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-3">
@@ -10,6 +11,9 @@
                 <div class="form-group">
                     <input id="filter-input" type="text" class="form-control" name="filter" onkeyup="filterTable()" placeholder="Filter">
                 </div>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-success" data-toggle="modal" data-target="#product-create-modal"><i class="fa fa-fw fa-plus"></i></button>
             </div>
         </div>
         <div class="row">
@@ -26,17 +30,17 @@
                 {% for p in products %}
                     <tr>
                         <td><a href="{% url 'speisekammer_ui:product-detail' pk=p.pk %}">{{ p.name }}</a></td>
-                        <td>{{ p.item_count }}</td>
+                        <td id="product-count-{{ p.pk }}">{{ p.item_count }}</td>
                         <td>{{ p.stock_count }}</td>
                         <td class="form-inline">
-                            <button class="btn btn-success mx-2" onclick="productIO({{ p.pk }}, 1);"><i class="fa fa-fw fa-plus"></i></button>
-                            <button class="btn btn-danger mx-2" onclick="productIO({{ p.pk }}, -1);"><i class="fa fa-fw fa-minus"></i></button>
-                            <button class="btn btn-danger mx-2" onclick="productIO({{ p.pk }}, -{{ p.item_count }});"><i class="fa fa-fw fa-trash"></i></button>
+                            <button class="btn btn-success mx-2" onclick="productIO({{ p.pk }}, 1, '#product-count-{{ p.pk }}');"><i class="fa fa-fw fa-plus"></i></button>
+                            <button class="btn btn-danger mx-2" onclick="productIO({{ p.pk }}, -1, '#product-count-{{ p.pk }}');"><i class="fa fa-fw fa-minus"></i></button>
+                            <button class="btn btn-danger mx-2" onclick="productIO({{ p.pk }}, -{{ p.item_count }}, '#product-count-{{ p.pk }}');"><i class="fa fa-fw fa-trash"></i></button>
                             <div class="form-group">
                                 <input class="ml-5 form-control" type="text" id="io-input-{{ p.pk }}">
                                 <span class="input-group-btn">
                                     <button class="btn btn-info"
-                                            onclick="dynamicProductIO({{ p.pk }});">
+                                            onclick="dynamicProductIO({{ p.pk }}, '#product-count-{{ p.pk }}');">
                                         <i class="fa fa-fw fa-refresh"></i>
                                     </button>
                                 </span>
@@ -63,5 +67,9 @@
             tr.show();
         }
     }
+
+    $( "#product-create-modal-button" ).click(function() {
+        $( "#product-create-modal-form" ).submit();
+    });
 </script>
 {% endblock %}

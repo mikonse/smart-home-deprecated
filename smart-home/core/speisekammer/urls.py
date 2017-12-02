@@ -10,5 +10,6 @@ router = routers.DefaultRouter()
 router.register(r'products', views.ProductViewSet)
 router.register(r'barcodes', views.BarcodeViewSet)
 router.register(r'shopping-lists', views.ShoppingListViewSet)
+router.register(r'shopping-list-items', views.ShoppingListItemViewSet)
 
 urlpatterns = router.urls

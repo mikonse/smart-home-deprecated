@@ -129,7 +129,7 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
     # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     @list_route(methods=['post'], url_path='create-from-speisekammer')
-    def create_from_speisekammer(self, request):
+    def create_from_speisekammer(self, request, pk=None):
         """
         API call to automatically generate a shopping list from the current stock.
         """
@@ -141,6 +141,18 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
             status.HTTP_201_CREATED
         )
 
+    @detail_route(methods=['post'], url_path='complete')
+    def complete(self, request, pk=None):
+        """
+        Set this shopping list to done
+        """
+        instance = self.get_object()
+        instance.complete()
+        return Response(
+            self.serializer_class(instance, context={'request': request}).data,
+            status.HTTP_202_ACCEPTED
+        )
+
 
 class ShoppingListItemViewSet(viewsets.ModelViewSet):
     """
@@ -149,6 +161,15 @@ class ShoppingListItemViewSet(viewsets.ModelViewSet):
     queryset = ShoppingListItem.objects.all()
     serializer_class = ShoppingListItemSerializer
     # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    @detail_route(methods=['post'], url_path='complete')
+    def complete(self, request, pk=None):
+        instance = self.get_object()
+        instance.complete()
+        return Response(
+            self.serializer_class(instance, context={'request': request}).data,
+            status.HTTP_202_ACCEPTED
+        )
 
     @detail_route(methods=['post'], url_path='item-io')
     def item_io(self, request, pk=None):

@@ -88,10 +88,10 @@ class ShoppingList(models.Model):
     @staticmethod
     def get_active_list():
         if not ShoppingList.objects.filter(active=True).exists():
-            if not ShoppingList.objects.all().count() > 0:
+            if ShoppingList.objects.exclude(completion__isnull=True).exists():
                 shopping_list = ShoppingList.create_from_speisekammer(name='')
             else:
-                shopping_list = ShoppingList.objects.all().order_by('creation')[0]
+                shopping_list = ShoppingList.objects.filter(completion__isnull=False).order_by('creation')[0]
             shopping_list.active = True
             shopping_list.save()
         else:
@@ -125,6 +125,8 @@ class ShoppingList(models.Model):
         if not self.is_completed():
             self.completion = timezone.now()
             self.active = False
+            for item in self.items.all():
+                item.complete()
             self.save()
 
     def is_completed(self):
@@ -152,12 +154,18 @@ class ShoppingListItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     item_count = models.PositiveIntegerField(default=0)
     shopping_list = models.ForeignKey(ShoppingList, related_name="items")
+    done = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('product', 'shopping_list')
 
     def update_from_speisekammer(self):
         self.item_count = self.product.count_difference()
+        self.save()
+
+    def complete(self):
+        self.product.item_io(self.item_count)
+        self.done = True
         self.save()
 
     def item_io(self, io):

@@ -49,6 +49,19 @@ INSTALLED_API_APPS = [
     'devices'
 ]
 
+INSTALLED_MQTT_APPS = [
+
+]
+
+MQTT_SETTINGS = {
+    "IP" : "",
+    "PORT" : "",
+    "CLEAN_SESSION" : True,
+    "USERNAME" : "",
+    "PASSW" : None,
+    "CLIENT_ID" : "",
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
